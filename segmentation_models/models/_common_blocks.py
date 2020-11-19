@@ -4,6 +4,19 @@ import numpy as np
 from tensorflow import keras
 from keras import layers
 
+class Scalar(keras.layers.Layer):
+
+    def __init__(self, **kwargs):
+        super(Scalar, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        # Create a trainable weight variable for this layer.
+        self.gamma = self.add_weight(name='gamma',shape=(1,),initializer='zeros',trainable=True)
+
+    def call(self, inputs):
+        attention, skip = inputs
+        return self.gamma * attention + skip
+
 class SelfAttention2D(keras.layers.Layer):
     def __init__(self, depth_k, depth_v, num_heads, relative, **kwargs):
         """
