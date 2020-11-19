@@ -1,8 +1,9 @@
 from keras_applications import get_submodules_from_kwargs
 
-from ._common_blocks import Conv2dBn
+from ._common_blocks import Conv2dBn, SelfAttentino2D
 from ._utils import freeze_model, filter_keras_submodules
 from ..backbones.backbones_factory import Backbones
+import numpy as np
 
 backend = None
 layers = None
@@ -57,6 +58,7 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
         x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
 
         if skip is not None:
+            skip = SelfAttention2D(
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
@@ -66,6 +68,30 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
 
     return wrapper
 
+def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False, Rk = 0.25, Rv = 0.25, Nh = 8):
+    ei = lambda x : int(np.ceil(x/Nh)*Nh)
+    dk = ei(filters*Rk)
+    dv = ei(filters*Rv)
+    up_name = 'decoder_stage{}_upsampling'.format(stage)
+    conv1_name = 'decoder_stage{}a'.format(stage)
+    conv2_name = 'decoder_stage{}b'.format(stage)
+    concat_name = 'decoder_stage{}_concat'.format(stage)
+
+    concat_axis = 3 if backend.image_data_format() == 'channels_last' else 1
+
+    def wrapper(input_tensor, skip=None):
+        x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
+
+        if skip is not None:
+            skip = SelfAttention2D(dk,dv,Nh,relative = False)(skip)
+            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
+
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
+
+        return x
+
+    return wrapper
 
 def DecoderTransposeX2Block(filters, stage, use_batchnorm=False):
     transp_name = 'decoder_stage{}a_transpose'.format(stage)
