@@ -17,7 +17,7 @@ class Scale(keras.layers.Layer):
     def call(self, inputs):
         sa, skip = inputs
         attn_ratio = self.gamma/(self.gamma+self.beta)
-        return attn_ratio * inputs + (1-attn_ratio)*skip
+        return tf.add(attn_ratio*inputs,(1-attn_ratio)*skip)
 
 class SelfAttention2D(keras.layers.Layer):
     def __init__(self, depth_k, depth_v, num_heads, relative, **kwargs):
