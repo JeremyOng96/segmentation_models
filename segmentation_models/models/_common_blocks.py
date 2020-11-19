@@ -183,7 +183,8 @@ class SelfAttention2D(keras.layers.Layer):
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
     
-def Attention2D( Rk=1,
+def Attention2D( filters,
+                 Rk=1,
                  Rv=1,
                  Nh=8, 
                  relative=False):
