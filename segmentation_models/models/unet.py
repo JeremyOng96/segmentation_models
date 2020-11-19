@@ -84,11 +84,12 @@ def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False, Rk=1, Rv =1,
         if skip is not None:
             # Apply multiheaded self attention to skipped features
             sa = layers.AveragePooling2D()(skip)
-            sa = SelfAttention2D(dk,dv,Nh,relative=True)(skip)
-            sa = layers.UpSampling2D()(skip)
+            sa = SelfAttention2D(dk,dv,Nh,relative=True)(sa)
+            sa = layers.UpSampling2D()(sa)
+            sa = Scale()(sa)
             
-            # Scale the multiheaded self attention, 1st layer is SA and 2nd skip
-            skip = Scale()([sa,skip])
+            # Adds the self attention output and skip connection
+            skip = sa + skip          
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
