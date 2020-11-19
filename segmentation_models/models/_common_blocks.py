@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow import keras
 from keras import layers
 
-class Scalar(keras.layers.Layer):
+class Scale(keras.layers.Layer):
 
     def __init__(self, **kwargs):
         super(Scalar, self).__init__(**kwargs)
