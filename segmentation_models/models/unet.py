@@ -89,7 +89,7 @@ def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False, Rk=1, Rv =1,
             sa = Scale()(sa)
             
             # Adds the self attention output and skip connection
-            skip = sa + skip          
+            skip = layers.Add()([sa,skip])
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
