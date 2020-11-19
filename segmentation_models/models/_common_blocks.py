@@ -183,24 +183,6 @@ class SelfAttention2D(keras.layers.Layer):
         }
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
-    
-def Attention2D( filters,
-                 Rk=1,
-                 Rv=1,
-                 Nh=8, 
-                 relative=False):
-    
-    def wrapper(input_tensor):
-        ei = lambda x : int(np.ceil(x/Nh)*Nh)
-        dk = ei(filters*Rk)
-        dv = ei(filters*Rv)
-        x = layers.AveragePooling2D()(input_tensor)
-        x = SelfAttention2D(dk,dv,Nh,relative)(x)
-        x = layers.UpSampling2D(interpolation = "bilinear")(x)
-        
-        return x
-    
-    return wrapper
             
 def Conv2dBn(
         filters,
