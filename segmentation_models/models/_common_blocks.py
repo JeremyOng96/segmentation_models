@@ -14,8 +14,7 @@ class Scale(keras.layers.Layer):
         self.gamma = self.add_weight(name='gamma',shape=(1,),initializer='zeros',trainable=True)
 
     def call(self, inputs):
-        attention, skip = inputs
-        return self.gamma * attention + skip
+        return self.gamma * inputs
 
 class SelfAttention2D(keras.layers.Layer):
     def __init__(self, depth_k, depth_v, num_heads, relative, **kwargs):
