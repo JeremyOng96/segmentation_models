@@ -83,7 +83,7 @@ def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False, Rk=1, Rv =1,
 
         if skip is not None:
             skip = layers.AveragePooling2D()(skip)
-            skip = SelfAttention2D(dk,dv,Nh,relative = False)(skip)
+            skip = SelfAttention2D(dk,dv,Nh,relative=True)(skip)
             skip = layers.UpSampling2D()(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
