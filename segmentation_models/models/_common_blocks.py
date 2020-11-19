@@ -57,7 +57,131 @@ class SelfAttention2D(keras.layers.Layer):
         if self.relative:
             self.rel_embeddings_w = self.add_weight('rel_embeddings_w',shape=(2 * self.W - 1, self.dkh),initializer=tf.keras.initializers.RandomNormal(stddev=self.dkh ** -0.5),trainable = True)
             self.rel_embeddings_h = self.add_weight('rel_embeddings_h',shape=(2 * self.H - 1, self.dkh),initializer=tf.keras.initializers.RandomNormal(stddev=self.dkh ** -0.5),trainable = True)
-            
+
+
+    def call(self,inputs,**kwargs):
+        # Input = [1,16,16,64] 
+        # dk = 24, dv = 24
+        flatten_hw = lambda x,d: tf.reshape(x, [-1, self.nh, self.H*self.W,d])
+        # Compute q, k, v matrix 
+
+        kqv = self.conv_kqv(inputs) # [1,16,16,72]
+        k, q, v = tf.split(kqv,[self.dk,self.dk,self.dv],axis = -1) # [1,16,16,24] for k q and v
+        # Rescale the value of q
+        q *= (self.dkh ** -0.5)
+
+        # Splits a tensor with shape [batch, num_heads, height, width, channels] 
+        # to a tensor with shape [batch,num_heads,height,width,channels/num_heads]
+
+        q = self.split_heads_2d(q,self.nh)
+        k = self.split_heads_2d(k,self.nh)
+        v = self.split_heads_2d(v,self.nh)
+        # [B,Nh,HW,HW]
+        logits = tf.matmul(flatten_hw(q,self.dkh),flatten_hw(k,self.dkh),transpose_b= True)
+
+        if self.relative:
+            rel_logits_h, rel_logits_w = self.relative_logits(q,self.H,self.W,self.nh)
+
+            logits += rel_logits_h
+            logits += rel_logits_w
+
+
+        weights = self.softmax(logits)
+        attn_out = tf.matmul(weights, flatten_hw(v,self.dvh))
+        attn_out = tf.reshape(attn_out,[-1,self.nh,self.H,self.W,self.dvh])
+        attn_out = self.combine_heads_2d(attn_out)
+
+        # Project heads
+
+        out = self.conv_project(attn_out)
+
+        return out
+
+    def shape_list(self,x):
+        """
+        Returns a list of dimensions
+        Arguments:
+        x : A keras tensor    
+        """
+
+        static = x.get_shape().as_list()
+        shape = tf.shape(x)
+        ret = []
+        for i, static_dim in enumerate(static):
+            dim = static_dim or shape[i]
+            ret.append(dim)
+
+        return ret
+
+
+    def split_heads_2d(self,inputs,Nh):
+        """ Split channels into multiple heads """
+        B, H, W, d = self.shape_list(inputs)
+        ret_shape = [B,H,W,Nh,d//Nh]
+        split = tf.reshape(inputs, ret_shape)
+        return tf.transpose(split, [0,3,1,2,4])
+
+    def combine_heads_2d(self, inputs):
+        """ Combine heads (inverse of split_heads_2d)."""
+        transposed = tf.transpose(inputs,[0,2,3,1,4])
+        Nh, channels = self.shape_list(transposed)[-2:]
+        ret_shape = self.shape_list(transposed)[:-2] + [Nh * channels]
+        return tf.reshape(transposed,ret_shape)
+
+    def rel_to_abs(self,x):
+        """ Converts tensor from relative to absolute indexing. """
+        # [B, Nh, L, 2L-1]
+        B, Nh, L, _ = self.shape_list(x)
+        # Pad to shift from relative to absolute indexing
+        col_pad = tf.zeros((B,Nh,L,1))
+        x = tf.concat([x,col_pad],axis = 3)
+        flat_x = tf.reshape(x, [B,Nh,L*2*L])
+        flat_pad = tf.zeros((B,Nh,L-1))
+        flat_x_padded = tf.concat([flat_x,flat_pad],axis = 2)
+        # Reshape and slice out the padded elements
+        final_x = tf.reshape(flat_x_padded, [B,Nh,L+1,2*L-1])
+        final_x = final_x[:,:,:L,L-1:]
+        return final_x
+
+    def relative_logits_1d(self,q,rel_k,H,W,Nh,transpose_mask):
+        """ Compute relative logits along H or W """
+
+        rel_logits = tf.einsum("bhxyd,md->bhxym",q,rel_k)
+        # Collapse height and heads
+        rel_logits = tf.reshape(rel_logits, [-1,Nh*H,W,2 * W-1])
+        rel_logits = self.rel_to_abs(rel_logits)
+        # Shape it and tile height times
+        rel_logits = tf.reshape(rel_logits, [-1, Nh,H,W,W])
+        rel_logits = tf.expand_dims(rel_logits, axis = 3)
+        rel_logits = tf.tile(rel_logits,[1,1,1,H,1,1])
+        # Reshape for adding to the logits
+        rel_logits = tf.transpose(rel_logits, transpose_mask)
+        rel_logits = tf.reshape(rel_logits, [-1,Nh,H*W,H*W])
+        return rel_logits
+
+    def relative_logits(self,q,H,W,Nh):
+        """ Compute relative logits """
+
+        rel_logits_w = self.relative_logits_1d(q,self.rel_embeddings_w,H,W,Nh,[0,1,2,4,3,5])
+        rel_logits_h = self.relative_logits_1d(q,self.rel_embeddings_h,W,H,Nh,[0,1,4,2,5,3])
+
+        # [B, Nh, HW, HW]
+        return rel_logits_h, rel_logits_w
+
+    def get_config(self):
+        config = {
+            "dk" : self.dk,
+            "dv" : self.dv,
+            "nh" : self.nh,
+            "filters" : self.filters,
+            "kernel_size" : self.kernel_size,
+            "relative" : self.relative,
+            "downsample" : self.downsample,
+            "dkh" : self.dkh,
+            "dvh" : self.dvh
+        }
+        base_config = super().get_config()
+        return dict(list(base_config.items()) + list(config.items()))
             
 def Conv2dBn(
         filters,
