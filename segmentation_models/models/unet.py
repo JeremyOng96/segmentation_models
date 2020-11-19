@@ -1,6 +1,6 @@
 from keras_applications import get_submodules_from_kwargs
 
-from ._common_blocks import Conv2dBn, SelfAttentino2D
+from ._common_blocks import Conv2dBn, SelfAttention2D
 from ._utils import freeze_model, filter_keras_submodules
 from ..backbones.backbones_factory import Backbones
 import numpy as np
