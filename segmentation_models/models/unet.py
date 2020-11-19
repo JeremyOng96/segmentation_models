@@ -36,7 +36,7 @@ def Conv3x3BnReLU(filters, use_batchnorm, name=None):
             filters,
             kernel_size=3,
             activation='relu',
-            kernel_initializer='he_uniform',
+            kernel_initializer='he_initializer',
             padding='same',
             use_batchnorm=use_batchnorm,
             name=name,
@@ -82,7 +82,7 @@ def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False, Rk = 1, Rv =
         x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
 
         if skip is not None:
-            skip = Attention2D(dk,dv,Nh,relative = False)(skip)
+            skip = Attention2D(filters, dk,dv,Nh,relative = False)(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
