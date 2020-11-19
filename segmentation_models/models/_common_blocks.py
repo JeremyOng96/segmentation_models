@@ -200,7 +200,9 @@ def SelfAttention( dk,
         
         # Form the MHA matrix
         kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal")(input_tensor)
+        kqv = layers.AveragePooling2D()(kqv)
         kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
+        kqv = layers.UpSampling2D(interpolation = "bilinear")(kqv)
         
         return kqv
     return wrapper
