@@ -11,13 +11,15 @@ class Scale(keras.layers.Layer):
 
     def build(self, input_shape):
         # Create a trainable weight variable for this layer.
-        self.gamma = self.add_weight(name='gamma',shape=(1,),initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.05),trainable=True)
-        self.beta = self.add_weight(name='beta', shape=(1,),initializer='ones',trainable=True)
+        self.alpha = self.add_weight(name='gamma',shape=(1,),initializer=tf.keras.initializers.Zeros())
+        self.beta = self.add_weight(name='gamma',shape=(1,),initializer=tf.keras.initializers.Ones())
+
 
     def call(self, inputs):
-        sa, skip = inputs
-        attn_ratio = self.gamma/(self.gamma+self.beta)
-        return tf.add(attn_ratio*inputs,(1-attn_ratio)*skip)
+        a, b = inputs
+        ratio = self.alpha/(self.alpha+self.beta)
+        return tf.add(ratio*a,(1-ratio)*b)
+
 
 class SelfAttention2D(keras.layers.Layer):
     def __init__(self, depth_k, depth_v, num_heads, relative, **kwargs):
