@@ -12,9 +12,12 @@ class Scale(keras.layers.Layer):
     def build(self, input_shape):
         # Create a trainable weight variable for this layer.
         self.gamma = self.add_weight(name='gamma',shape=(1,),initializer='zeros',trainable=True)
+        self.beta = self.add_weight(name='beta', shape=(1,),initializer='ones',trainable=True)
 
     def call(self, inputs):
-        return self.gamma * inputs
+        sa, skip = inputs
+        attn_ratio = self.gamma/(self.gamma+self.beta)
+        return attn_ratio * inputs + (1-attn_ratio)*skip
 
 class SelfAttention2D(keras.layers.Layer):
     def __init__(self, depth_k, depth_v, num_heads, relative, **kwargs):
@@ -58,10 +61,6 @@ class SelfAttention2D(keras.layers.Layer):
         self.dvh = self.dv // self.nh
 
         # Initialize the necessary layers
-        self.conv_kqv = layers.Conv2D(filters = 2*self.dk + self.dv,kernel_size = 1,padding = "same") # Convolutional layer to produce KQV matrix
-        self.conv_project = layers.Conv2D(filters = self.dv,kernel_size=1,padding ="same") # Convolutional layer of size 1 to project attention layer to size of filter
-        self.bn = layers.BatchNormalization()
-        self.softmax = layers.Softmax()
 
     def build(self, input_shape):
         self._shape = input_shape
@@ -73,13 +72,12 @@ class SelfAttention2D(keras.layers.Layer):
 
 
     def call(self,inputs,**kwargs):
-        # Input = [1,16,16,64] 
+        # Input is the KQV matrix
         # dk = 24, dv = 24
         flatten_hw = lambda x,d: tf.reshape(x, [-1, self.nh, self.H*self.W,d])
+        
         # Compute q, k, v matrix 
-
-        kqv = self.conv_kqv(inputs) # [1,16,16,72]
-        k, q, v = tf.split(kqv,[self.dk,self.dk,self.dv],axis = -1) # [1,16,16,24] for k q and v
+        k, q, v = tf.split(inputs,[self.dk,self.dk,self.dv],axis = -1) # [1,16,16,24] for k q and v
         # Rescale the value of q
         q *= (self.dkh ** -0.5)
 
@@ -98,17 +96,12 @@ class SelfAttention2D(keras.layers.Layer):
             logits += rel_logits_h
             logits += rel_logits_w
 
-
-        weights = self.softmax(logits)
+        weights = tf.nn.softmax(logits)
         attn_out = tf.matmul(weights, flatten_hw(v,self.dvh))
         attn_out = tf.reshape(attn_out,[-1,self.nh,self.H,self.W,self.dvh])
         attn_out = self.combine_heads_2d(attn_out)
 
-        # Project heads
-
-        out = self.conv_project(attn_out)
-
-        return out
+        return attn_out
 
     def shape_list(self,x):
         """
@@ -195,6 +188,23 @@ class SelfAttention2D(keras.layers.Layer):
         }
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
+    
+def SelfAttention( filters,
+                   Rk=0.25,
+                   Rv=0.25,
+                   Nh=0.25,
+                   relative = False):
+    def wrapper(input_tensor): 
+        ei = lambda x : int(np.ceil(x/Nh)*Nh)
+        dk = ei(filters*Rk)
+        dv = ei(filters*Rv)
+        
+        # Form the MHA matrix
+        kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal")(input_tensor)
+        kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
+        
+        return kqv
+    return wrapper
             
 def Conv2dBn(
         filters,
