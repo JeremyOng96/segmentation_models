@@ -68,7 +68,7 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
     return wrapper
 
 def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False, Rk = 1, Rv = 1, Nh = 8):
-    ei = lambda x : int(np.ceil(x/Nh)*Nh
+    ei = lambda x : int(np.ceil(x/Nh)*Nh)
     dk = ei(filters*Rk)
     dv = ei(filters*Rv)
     up_name = 'decoder_stage{}_upsampling'.format(stage)
