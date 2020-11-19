@@ -7,7 +7,7 @@ from keras import layers
 class Scale(keras.layers.Layer):
 
     def __init__(self, **kwargs):
-        super(Scalar, self).__init__(**kwargs)
+        super(Scale, self).__init__(**kwargs)
 
     def build(self, input_shape):
         # Create a trainable weight variable for this layer.
