@@ -140,7 +140,7 @@ def DecoderTransposeX2Block(filters, stage, use_batchnorm=False):
 #  Unet Decoder
 # ---------------------------------------------------------------------
 
-def build_unet(
+def build_unet_ds(
         backbone,
         decoder_block,
         skip_connection_layers,
@@ -203,7 +203,7 @@ def build_unet(
 #  Unet Model
 # ---------------------------------------------------------------------
 
-def Unet(
+def Unet_ds(
         backbone_name='vgg16',
         input_shape=(None, None, 3),
         classes=1,
