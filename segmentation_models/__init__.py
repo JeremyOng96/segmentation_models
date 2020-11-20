@@ -113,7 +113,9 @@ from .models.unet import Unet as _Unet
 from .models.pspnet import PSPNet as _PSPNet
 from .models.linknet import Linknet as _Linknet
 from .models.fpn import FPN as _FPN
+from .models.unet_ds import Unet_ds as _Unet_ds
 
+Unet_ds = inject_global_submodules(_Unet_ds)
 Unet = inject_global_submodules(_Unet)
 PSPNet = inject_global_submodules(_PSPNet)
 Linknet = inject_global_submodules(_Linknet)
