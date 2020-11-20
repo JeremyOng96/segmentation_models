@@ -270,7 +270,7 @@ def Unet_ds(
     if encoder_features == 'default':
         encoder_features = Backbones.get_feature_layers(backbone_name, n=4)
 
-    model = build_unet(
+    model = build_unet_ds(
         backbone=backbone,
         decoder_block=decoder_block,
         skip_connection_layers=encoder_features,
