@@ -176,7 +176,7 @@ def build_unet_ds(
         x = decoder_block(decoder_filters[i], stage=i, use_batchnorm=use_batchnorm)(x, skip)
         
         # Generate auxilary output
-        up = input_size/x.shape[1]
+        up = int(input_size/x.shape[1])
         x_temp = layers.UpSampling2D(size=(up,up),interpolation='bilinear')(x)
         out_temp = layers.Conv2D(filters=classes,kernel_size=(3,3),padding="same",use_bias=True,kernel_initializer="glorot_uniform",name="output"+i)(x_temp)
         out_temp = layers.Activation(activation, name=activation)(out_temp)
