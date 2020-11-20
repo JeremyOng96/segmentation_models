@@ -178,8 +178,8 @@ def build_unet_ds(
         # Generate auxilary output
         up = int(input_size/x.shape[1])
         x_temp = layers.UpSampling2D(size=(up,up),interpolation='bilinear')(x)
-        out_temp = layers.Conv2D(filters=classes,kernel_size=(3,3),padding="same",use_bias=True,kernel_initializer="glorot_uniform",name="output"+i)(x_temp)
-        out_temp = layers.Activation(activation, name=activation)(out_temp)
+        out_temp = layers.Conv2D(filters=classes,kernel_size=(3,3),padding="same",use_bias=True,kernel_initializer="glorot_uniform")(x_temp)
+        out_temp = layers.Activation(activation, name="output"+i)(out_temp)
         output.append(out_temp)
         
     # model head (define number of output classes)
