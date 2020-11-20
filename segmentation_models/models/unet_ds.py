@@ -153,7 +153,7 @@ def build_unet_ds(
     input_ = backbone.input
     input_size = input_.shape[1] # Assume that H and W are the same
     x = backbone.output
-    out = []
+    output_branches = []
 
     # extract skip connections
     skips = ([backbone.get_layer(name=i).output if isinstance(i, str)
@@ -180,7 +180,7 @@ def build_unet_ds(
         x_temp = layers.UpSampling2D(size=(up,up),interpolation='bilinear')(x)
         out_temp = layers.Conv2D(filters=classes,kernel_size=(3,3),padding="same",use_bias=True,kernel_initializer="glorot_uniform")(x_temp)
         out_temp = layers.Activation(activation, name=f"output_{i}")(out_temp)
-        output.append(out_temp)
+        output_branches.append(out_temp)
         
     # model head (define number of output classes)
 #     x = layers.Conv2D(
@@ -194,7 +194,7 @@ def build_unet_ds(
 #     x = layers.Activation(activation, name=activation)(x)
 
     # create keras model instance
-    model = models.Model(input_, output)
+    model = models.Model(input_, output_branches)
 
     return model
 
