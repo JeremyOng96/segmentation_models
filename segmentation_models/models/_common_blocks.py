@@ -192,8 +192,8 @@ class SelfAttention2D(keras.layers.Layer):
         return dict(list(base_config.items()) + list(config.items()))
     
 def SelfAttention( filters,
-                   Rk=0.25,
-                   Rv=0.25,
+                   Rk=1,
+                   Rv=1,
                    Nh=8,
                    relative=False):
     def layer(input_tensor): 
@@ -208,7 +208,9 @@ def SelfAttention( filters,
         # if strides == (1,1):
         #    kqv = layers.UpSampling2D(interpolation = "bilinear")(kqv)
         # Projection of MHA
-        kqv = layers.Conv2D(filters,1)(kqv)
+        if Rv != 1:
+            # If Rv not equal to 1, project it to original output filter
+            kqv = layers.Conv2D(filters,1)(kqv)
         return kqv
     
     return layer
