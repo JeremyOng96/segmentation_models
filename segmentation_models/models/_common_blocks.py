@@ -11,8 +11,8 @@ class Scale(keras.layers.Layer):
 
     def build(self, input_shape):
         # Create a trainable weight variable for this layer.
-        self.alpha = self.add_weight(name='gamma',shape=(1,),initializer=tf.keras.initializers.Zeros())
-        self.beta = self.add_weight(name='gamma',shape=(1,),initializer=tf.keras.initializers.Ones())
+        self.alpha = self.add_weight(name='alpha',shape=(1,),initializer=tf.keras.initializers.Zeros())
+        self.beta = self.add_weight(name='beta',shape=(1,),initializer=tf.keras.initializers.Ones())
 
 
     def call(self, inputs):
@@ -191,23 +191,27 @@ class SelfAttention2D(keras.layers.Layer):
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
     
-def SelfAttention( dk,
-                   dv,
+def SelfAttention( filters,
+                   Rk=0.25,
+                   Rv=0.25,
                    Nh=8,
-                   relative = False):
-    def wrapper(input_tensor): 
-
+                   relative=False):
+    def layer(input_tensor): 
+        ei = lambda x : int(np.ceil(x/Nh)*Nh)
+        dk = ei(filters*Rk)
+        dv = ei(filters*Rv)
         
         # Form the MHA matrix
         kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal")(input_tensor)
-        kqv = layers.AveragePooling2D()(kqv)
+        # kqv = layers.AveragePooling2D()(kqv)
         kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
-        kqv = layers.UpSampling2D(interpolation = "bilinear")(kqv)
+        # if strides == (1,1):
+        #    kqv = layers.UpSampling2D(interpolation = "bilinear")(kqv)
         # Projection of MHA
-        attn = layers.Conv2D(filters,1)(kqv)
-        
-        return attn
-    return wrapper
+        kqv = layers.Conv2D(filters,1)(kqv)
+        return kqv
+    
+    return layer
             
 def Conv2dBn(
         filters,
