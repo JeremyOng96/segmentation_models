@@ -202,8 +202,8 @@ def SelfAttention( filters,
                    Rv=1,
                    Nh=8,
                    relative=False):
-    convkqv_name = 'decoder_stage{}kqv'.format(stage)
-    convprojection_name = 'decoder_stage{}projection'.format(stage)
+    convkqv_name = 'decoder_stage{}_kqv'.format(stage)
+    convprojection_name = 'decoder_stage{}_projection'.format(stage)
 
     def layer(input_tensor): 
         ei = lambda x : int(np.ceil(x/Nh)*Nh)
