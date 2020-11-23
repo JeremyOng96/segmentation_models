@@ -19,6 +19,14 @@ class Scale(keras.layers.Layer):
         a, b = inputs
         ratio = self.alpha/(self.alpha+self.beta)
         return tf.add(ratio*a,(1-ratio)*b)
+    
+    def get_config(self):
+        config = {
+            "alpha" : self.alpha,
+            "beta" : self.beta,
+        }
+        base_config = super().get_config()
+        return dict(list(base_config.items()) + list(config.items()))
 
 
 class SelfAttention2D(keras.layers.Layer):
@@ -181,10 +189,7 @@ class SelfAttention2D(keras.layers.Layer):
             "dk" : self.dk,
             "dv" : self.dv,
             "nh" : self.nh,
-            "filters" : self.filters,
-            "kernel_size" : self.kernel_size,
             "relative" : self.relative,
-            "downsample" : self.downsample,
             "dkh" : self.dkh,
             "dvh" : self.dvh
         }
