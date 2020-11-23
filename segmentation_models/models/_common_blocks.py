@@ -47,7 +47,7 @@ class SelfAttention_2(keras.layers.Layer):
         attn = K.reshape(attn, (-1, h, w, filters))
 
         out = self.gamma*attn + input
-    return out
+        return out
     
     def get_config(self):
         config = {
