@@ -20,11 +20,7 @@ class SelfAttention_2(keras.layers.Layer):
         self.convk_name = 'decoder_stage{}_k'.format(stage)
         self.convq_name = 'decoder_stage{}_q'.format(stage)
         self.convv_name = 'decoder_stage{}_v'.format(stage)
-        
-        self.conv_k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)
-        self.conv_q = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)
-        self.conv_v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)
-        
+               
         self.softmax = layers.Activation('softmax')
     def build(self, input_shape):
         self.gamma = self.add_weight(shape=(1, ),
@@ -32,7 +28,14 @@ class SelfAttention_2(keras.layers.Layer):
                                      name='gamma',
                                      regularizer=self.gamma_regularizer,
                                      constraint=self.gamma_constraint)
-
+        
+        self._shape = input_shape
+        _, self.h, self.W, self.filters = input_shape
+        
+        self.conv_k = layers.Conv2D(self.filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)
+        self.conv_q = layers.Conv2D(self.filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)
+        self.conv_v = layers.Conv2D(self.filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)
+        
         self.built = True
 
     def call(self, input_tensor):
