@@ -46,7 +46,7 @@ class SelfAttention_2(keras.layers.Layer):
         attn = K.batch_dot(weights, v) # [B,Hw,f]
         attn = K.reshape(attn, (-1, h, w, filters))
 
-        out = self.gamma*attn + input
+        out = self.gamma*attn + input_tensor
         return out
     
     def get_config(self):
