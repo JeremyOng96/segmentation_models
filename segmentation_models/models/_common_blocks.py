@@ -3,7 +3,50 @@ import tensorflow as tf
 import numpy as np
 from tensorflow import keras
 from keras import layers
+import keras.backend as K
 
+class SelfAttention_2(Layer):
+    def __init__(self,
+                 gamma_initializer=tf.zeros_initializer(),
+                 gamma_regularizer=None,
+                 gamma_constraint=None,
+                 **kwargs):
+        super(SelfAttention_2, self).__init__(**kwargs)
+        self.gamma_initializer = gamma_initializer
+        self.gamma_regularizer = gamma_regularizer
+        self.gamma_constraint = gamma_constraint
+
+    def build(self, input_shape):
+        self.gamma = self.add_weight(shape=(1, ),
+                                     initializer=self.gamma_initializer,
+                                     name='gamma',
+                                     regularizer=self.gamma_regularizer,
+                                     constraint=self.gamma_constraint)
+
+        self.built = True
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+
+    def call(self, input):
+        input_shape = input.get_shape().as_list()
+        _, h, w, filters = input_shape
+        
+        k = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal')(input)
+        q = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal')(input)
+        v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal')(input)
+
+        k_reshaped = K.reshape(k, (-1, h * w, filters)) # [B,HW,f] * [B,f,HW]
+        q_transposed = tf.transpose(K.reshape(q, (-1, h * w, filters)), (0, 2, 1))
+        logits = K.batch_dot(k_reshaped, q_transposed) / filters
+        weights = Activation('softmax')(logits)
+        v_reshaped = K.reshape(v, (-1, h * w, filters))
+        attn = K.batch_dot(weights, v_reshaped) # [B,Hw,f]
+        attn = K.reshape(attn, (-1, h, w, filters))
+
+        out = self.gamma*attn + input
+        return out
+    
 class Scale(keras.layers.Layer):
 
     def __init__(self, **kwargs):
@@ -196,7 +239,7 @@ class SelfAttention2D(keras.layers.Layer):
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
     
-def SelfAttention( filters,
+def MHSelfAttention( filters,
                    stage = None,
                    Rk=1,
                    Rv=1,
@@ -222,7 +265,38 @@ def SelfAttention( filters,
         return kqv
     
     return layer
-            
+
+def SelfAttention( filters,
+                   stage = None,
+                   Rk = 1,
+                   Rv = 1):
+    
+    convk_name = 'decoder_stage{}_k'.format(stage)
+    convq_name = 'decoder_stage{}_q'.format(stage)
+    convv_name = 'decoder_stage{}_v'.format(stage)
+    convprojection_name = 'decoder_stage{}_projection'.format(stage)
+    
+    def layer(input_tensor): 
+        dk = ei(filters*Rk)
+        dv = ei(filters*Rv)
+        
+        # Form the KQV matrix
+        k = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
+        q = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
+        v = layers.Conv2D(filters = dv,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
+
+        kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal",name=convkqv_name)(input_tensor)
+        kqv = layers.AveragePooling2D()(kqv)
+        kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
+        kqv=layers.UpSampling2D()(kqv)
+
+        # Projection of MHA
+
+        kqv = layers.Conv2D(filters,1,name=convprojection_name )(kqv)
+        return kqv
+    
+    return layer
+
 def Conv2dBn(
         filters,
         kernel_size,
