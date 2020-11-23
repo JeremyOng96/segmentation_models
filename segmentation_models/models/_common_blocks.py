@@ -30,7 +30,7 @@ class SelfAttention_2(keras.layers.Layer):
                                      constraint=self.gamma_constraint)
         
         self._shape = input_shape
-        _, self.h, self.W, self.filters = input_shape
+        _, self.h, self.w, self.filters = input_shape
         
         self.conv_k = layers.Conv2D(self.filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)
         self.conv_q = layers.Conv2D(self.filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)
@@ -39,18 +39,17 @@ class SelfAttention_2(keras.layers.Layer):
         self.built = True
 
     def call(self, input_tensor):
-        _, self.h, self.w, self.filters = input_tensor.shape    
 
         self.k = self.conv_k(input_tensor)
         self.q = self.conv_q(input_tensor)
         self.v = self.conv_v(input_tensor)
-        self.k = K.reshape(self.k,(-1,h*w,filters//8)) # [B,HW,f]
-        self.q = tf.transpose(K.reshape(self.q, (-1, self.h * self.w, self.filters // 8)), (0, 2, 1))
+        self.k = K.reshape(self.k,(-1,self.h*self.w,self.filters//8)) # [B,HW,f]
+        self.q = tf.transpose(K.reshape(self.q, (-1, self.h*self.w, self.filters // 8)), (0, 2, 1))
         self.logits = K.batch_dot(self.k, self.q)
-        self.weights = self.softmax(logits)
-        self.v = K.reshape(self.v, (-1, self.h * self.w, self.filters))
+        self.weights = self.softmax(self.logits)
+        self.v = K.reshape(self.v, (-1, self.h*self.w, self.filters))
         self.attn = K.batch_dot(self.weights, self.v) # [B,Hw,f]
-        self.attn = K.reshape(self.attn, (-1, h, w, self.filters))
+        self.attn = K.reshape(self.attn, (-1, self.h, self.w, self.filters))
 
         self.out = self.gamma*self.attn + input_tensor
         return self.out
@@ -62,6 +61,7 @@ class SelfAttention_2(keras.layers.Layer):
             "q" : self.q,
             "v" : self.v,
             "attn" : self.attn,
+            "weights": self.weights,
             "out" : self.out
         }
         base_config = super().get_config()
