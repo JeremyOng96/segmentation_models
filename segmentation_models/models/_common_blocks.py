@@ -34,9 +34,7 @@ class SelfAttention_2(keras.layers.Layer):
         return input_shape
 
     def call(self, input_tensor):
-        input_shape = input_tensor.get_shape().as_list()
-        _, h, w, filters = input_shape
-        
+        _, h, w, filters = input_tensor.shape    
 
         
         k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)(input_tensor)
