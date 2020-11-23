@@ -1,6 +1,6 @@
 from keras_applications import get_submodules_from_kwargs
 
-from ._common_blocks import Conv2dBn, SelfAttention, Scale
+from ._common_blocks import Conv2dBn, SelfAttention, SelfAttention_2, Scale
 from ._utils import freeze_model, filter_keras_submodules
 from ..backbones.backbones_factory import Backbones
 import numpy as np
@@ -81,9 +81,7 @@ def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False):
         if skip is not None:
             # Apply multiheaded self attention to skipped features
 
-            sa = SelfAttention(filters,stage)(skip)
-            skip = layers.Add()([sa,skip])
-            # Adds the self attention output and skip connection
+            skip = SelfAttention_2(stage)(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
