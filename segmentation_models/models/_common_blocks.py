@@ -7,6 +7,7 @@ import keras.backend as K
 
 class SelfAttention_2(Layer):
     def __init__(self,
+                 stage=None,
                  gamma_initializer=tf.zeros_initializer(),
                  gamma_regularizer=None,
                  gamma_constraint=None,
@@ -15,6 +16,10 @@ class SelfAttention_2(Layer):
         self.gamma_initializer = gamma_initializer
         self.gamma_regularizer = gamma_regularizer
         self.gamma_constraint = gamma_constraint
+        
+        self.convk_name = 'decoder_stage{}_k'.format(stage)
+        self.convq_name = 'decoder_stage{}_q'.format(stage)
+        self.convv_name = 'decoder_stage{}_v'.format(stage)
 
     def build(self, input_shape):
         self.gamma = self.add_weight(shape=(1, ),
@@ -32,16 +37,18 @@ class SelfAttention_2(Layer):
         input_shape = input.get_shape().as_list()
         _, h, w, filters = input_shape
         
-        k = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal')(input)
-        q = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal')(input)
-        v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal')(input)
 
-        k_reshaped = K.reshape(k, (-1, h * w, filters)) # [B,HW,f] * [B,f,HW]
-        q_transposed = tf.transpose(K.reshape(q, (-1, h * w, filters)), (0, 2, 1))
-        logits = K.batch_dot(k_reshaped, q_transposed) / filters
+        
+        k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)(input)
+        q = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)(input)
+        v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)(input)
+        
+        k = K.reshape(k,(-1,h*w,filters//8)) # [B,HW,f]
+        q = tf.transpose(K.reshape(q,(-1,h*w,filters//8),(0,2,1)
+        logits = K.batch_dot(k, q) / (filters//8)**0.5
         weights = Activation('softmax')(logits)
-        v_reshaped = K.reshape(v, (-1, h * w, filters))
-        attn = K.batch_dot(weights, v_reshaped) # [B,Hw,f]
+        v = K.reshape(v, (-1, h * w, filters))
+        attn = K.batch_dot(weights, v) # [B,Hw,f]
         attn = K.reshape(attn, (-1, h, w, filters))
 
         out = self.gamma*attn + input
@@ -266,36 +273,36 @@ def MHSelfAttention( filters,
     
     return layer
 
-def SelfAttention( filters,
-                   stage = None,
-                   Rk = 1,
-                   Rv = 1):
+# def SelfAttention( filters,
+#                    stage = None,
+#                    Rk = 1,
+#                    Rv = 1):
     
-    convk_name = 'decoder_stage{}_k'.format(stage)
-    convq_name = 'decoder_stage{}_q'.format(stage)
-    convv_name = 'decoder_stage{}_v'.format(stage)
-    convprojection_name = 'decoder_stage{}_projection'.format(stage)
+#     convk_name = 'decoder_stage{}_k'.format(stage)
+#     convq_name = 'decoder_stage{}_q'.format(stage)
+#     convv_name = 'decoder_stage{}_v'.format(stage)
+#     convprojection_name = 'decoder_stage{}_projection'.format(stage)
     
-    def layer(input_tensor): 
-        dk = ei(filters*Rk)
-        dv = ei(filters*Rv)
+#     def layer(input_tensor): 
+#         dk = ei(filters*Rk)
+#         dv = ei(filters*Rv)
         
-        # Form the KQV matrix
-        k = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
-        q = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
-        v = layers.Conv2D(filters = dv,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
+#         # Form the KQV matrix
+#         k = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
+#         q = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
+#         v = layers.Conv2D(filters = dv,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
 
-        kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal",name=convkqv_name)(input_tensor)
-        kqv = layers.AveragePooling2D()(kqv)
-        kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
-        kqv=layers.UpSampling2D()(kqv)
+#         kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal",name=convkqv_name)(input_tensor)
+#         kqv = layers.AveragePooling2D()(kqv)
+#         kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
+#         kqv=layers.UpSampling2D()(kqv)
 
-        # Projection of MHA
+#         # Projection of MHA
 
-        kqv = layers.Conv2D(filters,1,name=convprojection_name )(kqv)
-        return kqv
+#         kqv = layers.Conv2D(filters,1,name=convprojection_name )(kqv)
+#         return kqv
     
-    return layer
+#     return layer
 
 def Conv2dBn(
         filters,
