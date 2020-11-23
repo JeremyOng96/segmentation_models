@@ -61,7 +61,7 @@ class SelfAttention_2(keras.layers.Layer):
             "q" : self.q,
             "v" : self.v,
             "attn" : self.attn,
-            "weights": self.weights,
+            "w": self.weights,
             "out" : self.out
         }
         base_config = super().get_config()
