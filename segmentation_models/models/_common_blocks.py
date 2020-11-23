@@ -46,9 +46,9 @@ class SelfAttention_2(keras.layers.Layer):
         self.k = K.reshape(self.k,(-1,self.h*self.w,self.filters//8)) # [B,HW,f]
         self.q = tf.transpose(K.reshape(self.q, (-1, self.h*self.w, self.filters // 8)), (0, 2, 1))
         self.logits = K.batch_dot(self.k, self.q)
-        self.weights = self.softmax(self.logits)
+        self.xd = self.softmax(self.logits)
         self.v = K.reshape(self.v, (-1, self.h*self.w, self.filters))
-        self.attn = K.batch_dot(self.weights, self.v) # [B,Hw,f]
+        self.attn = K.batch_dot(self.xd, self.v) # [B,Hw,f]
         self.attn = K.reshape(self.attn, (-1, self.h, self.w, self.filters))
 
         self.out = self.gamma*self.attn + input_tensor
@@ -61,7 +61,7 @@ class SelfAttention_2(keras.layers.Layer):
             "q" : self.q,
             "v" : self.v,
             "attn" : self.attn,
-            "w": self.weights,
+            "w": self.xd,
             "out" : self.out
         }
         base_config = super().get_config()
