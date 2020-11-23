@@ -33,15 +33,15 @@ class SelfAttention_2(keras.layers.Layer):
     def compute_output_shape(self, input_shape):
         return input_shape
 
-    def call(self, input):
-        input_shape = input.get_shape().as_list()
+    def call(self, input_tensor):
+        input_shape = input_tensor.get_shape().as_list()
         _, h, w, filters = input_shape
         
 
         
-        k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)(input)
-        q = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)(input)
-        v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)(input)
+        k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)(input_tensor)
+        q = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)(input_tensor)
+        v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)(input_tensor)
         
         k = K.reshape(k,(-1,h*w,filters//8)) # [B,HW,f]
         q = tf.transpose(K.reshape(q,(-1,h*w,filters//8)),(0,2,1))
