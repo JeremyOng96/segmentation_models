@@ -5,7 +5,7 @@ from tensorflow import keras
 from keras import layers
 import keras.backend as K
 
-class SelfAttention_2(Layer):
+class SelfAttention_2(keras.layers.Layer):
     def __init__(self,
                  stage=None,
                  gamma_initializer=tf.zeros_initializer(),
