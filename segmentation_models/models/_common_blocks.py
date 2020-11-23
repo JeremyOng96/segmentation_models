@@ -20,7 +20,12 @@ class SelfAttention_2(keras.layers.Layer):
         self.convk_name = 'decoder_stage{}_k'.format(stage)
         self.convq_name = 'decoder_stage{}_q'.format(stage)
         self.convv_name = 'decoder_stage{}_v'.format(stage)
-
+        
+        self.conv_k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)
+        self.conv_q = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)
+        self.conv_v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)
+        
+        self.softmax = layers.Activation('softmax')
     def build(self, input_shape):
         self.gamma = self.add_weight(shape=(1, ),
                                      initializer=self.gamma_initializer,
@@ -31,27 +36,30 @@ class SelfAttention_2(keras.layers.Layer):
         self.built = True
 
     def call(self, input_tensor):
-        _, h, w, filters = input_tensor.shape    
+        _, self.h, self.w, self.filters = input_tensor.shape    
 
+        self.k = self.conv_k(input_tensor)
+        self.q = self.conv_q(input_tensor)
+        self.v = self.conv_v(input_tensor)
+        self.k = K.reshape(self.k,(-1,h*w,filters//8)) # [B,HW,f]
+        self.q = tf.transpose(K.reshape(self.q, (-1, self.h * self.w, self.filters // 8)), (0, 2, 1))
+        self.logits = K.batch_dot(self.k, self.q)
+        self.weights = self.softmax(logits)
+        self.v = K.reshape(self.v, (-1, self.h * self.w, self.filters))
+        self.attn = K.batch_dot(self.weights, self.v) # [B,Hw,f]
+        self.attn = K.reshape(self.attn, (-1, h, w, self.filters))
 
-        k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)(input_tensor)
-        q = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)(input_tensor)
-        v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)(input_tensor)
-
-        k = K.reshape(k,(-1,h*w,filters//8)) # [B,HW,f]
-        q = tf.transpose(K.reshape(q, (-1, h * w, filters // 8)), (0, 2, 1))
-        logits = K.batch_dot(k, q)
-        weights = layers.Activation('softmax')(logits)
-        v = K.reshape(v, (-1, h * w, filters))
-        attn = K.batch_dot(weights, v) # [B,Hw,f]
-        attn = K.reshape(attn, (-1, h, w, filters))
-
-        out = self.gamma*attn + input_tensor
-        return out
+        self.out = self.gamma*self.attn + input_tensor
+        return self.out
     
     def get_config(self):
         config = {
             "gamma" : self.gamma,
+            "k" : self.k,
+            "q" : self.q,
+            "v" : self.v,
+            "attn" : self.attn,
+            "out" : self.out
         }
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
