@@ -197,25 +197,28 @@ class SelfAttention2D(keras.layers.Layer):
         return dict(list(base_config.items()) + list(config.items()))
     
 def SelfAttention( filters,
+                   stage = None,
                    Rk=1,
                    Rv=1,
                    Nh=8,
                    relative=False):
+    convkqv_name = 'decoder_stage{}kqv'.format(stage)
+    convprojection_name = 'decoder_stage{}projection'.format(stage)
+
     def layer(input_tensor): 
         ei = lambda x : int(np.ceil(x/Nh)*Nh)
         dk = ei(filters*Rk)
         dv = ei(filters*Rv)
         
         # Form the MHA matrix
-        kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal")(input_tensor)
-        # kqv = layers.AveragePooling2D()(kqv)
+        kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal",name=convkqv_name)(input_tensor)
+        kqv = layers.AveragePooling2D()(kqv)
         kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
-        # if strides == (1,1):
-        #    kqv = layers.UpSampling2D(interpolation = "bilinear")(kqv)
+        kqv=layers.UpSampling2D()(kqv)
+
         # Projection of MHA
-        if Rv != 1:
-            # If Rv not equal to 1, project it to original output filter
-            kqv = layers.Conv2D(filters,1)(kqv)
+
+        kqv = layers.Conv2D(filters,1,name=convprojection_name )(kqv)
         return kqv
     
     return layer
