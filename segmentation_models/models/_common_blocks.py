@@ -45,7 +45,7 @@ class SelfAttention_2(Layer):
         
         k = K.reshape(k,(-1,h*w,filters//8)) # [B,HW,f]
         q = tf.transpose(K.reshape(q,(-1,h*w,filters//8),(0,2,1))
-        logits = K.batch_dot(k, q) / (filters//8)**0.5
+        logits = K.batch_dot(k, q)
         weights = layers.Activation('softmax')(logits)
         v = K.reshape(v, (-1, h * w, filters))
         attn = K.batch_dot(weights, v) # [B,Hw,f]
