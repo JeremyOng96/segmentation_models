@@ -30,19 +30,16 @@ class SelfAttention_2(keras.layers.Layer):
 
         self.built = True
 
-    def compute_output_shape(self, input_shape):
-        return input_shape
-
     def call(self, input_tensor):
         _, h, w, filters = input_tensor.shape    
 
-        
+
         k = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convk_name)(input_tensor)
         q = layers.Conv2D(filters//8, 1, use_bias=False, kernel_initializer='he_normal',name=self.convq_name)(input_tensor)
         v = layers.Conv2D(filters, 1, use_bias=False, kernel_initializer='he_normal',name=self.convv_name)(input_tensor)
-        
+
         k = K.reshape(k,(-1,h*w,filters//8)) # [B,HW,f]
-        q = tf.transpose(K.reshape(q,(-1,h*w,filters//8)),(0,2,1))
+        q = K.transpose(K.reshape(q,(-1,h*w,filters//8)))
         logits = K.batch_dot(k, q)
         weights = layers.Activation('softmax')(logits)
         v = K.reshape(v, (-1, h * w, filters))
@@ -50,7 +47,14 @@ class SelfAttention_2(keras.layers.Layer):
         attn = K.reshape(attn, (-1, h, w, filters))
 
         out = self.gamma*attn + input
-        return out
+    return out
+    
+    def get_config(self):
+        config = {
+            "gamma" : self.gamma,
+        }
+        base_config = super().get_config()
+        return dict(list(base_config.items()) + list(config.items()))
     
 class Scale(keras.layers.Layer):
 
