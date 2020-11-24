@@ -5,14 +5,14 @@ from tensorflow import keras
 from keras import layers
 import keras.backend as K
 
-class SelfAttention_2(keras.layers.Layer):
+class SelfAttention(keras.layers.Layer):
     def __init__(self,
                  stage=None,
                  gamma_initializer=tf.zeros_initializer(),
                  gamma_regularizer=None,
                  gamma_constraint=None,
                  **kwargs):
-        super(SelfAttention_2, self).__init__(**kwargs)
+        super(SelfAttention, self).__init__(**kwargs)
         self.gamma_initializer = gamma_initializer
         self.gamma_regularizer = gamma_regularizer
         self.gamma_constraint = gamma_constraint
@@ -92,7 +92,7 @@ class Scale(keras.layers.Layer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-class SelfAttention2D(keras.layers.Layer):
+class MultiHeadAttention2D(keras.layers.Layer):
     def __init__(self, depth_k, depth_v, num_heads, relative, **kwargs):
         """
         Applies attention augmentation on a convolutional layer output.
@@ -259,63 +259,28 @@ class SelfAttention2D(keras.layers.Layer):
         base_config = super().get_config()
         return dict(list(base_config.items()) + list(config.items()))
     
-def MHSelfAttention( filters,
-                   stage = None,
-                   Rk=1,
-                   Rv=1,
-                   Nh=8,
-                   relative=False):
+def MultiHeadAttention( f_out,
+                        stage = None,
+                        Rk=1,
+                        Rv=1,
+                        Nh=8,
+                        relative=False):
     convkqv_name = 'decoder_stage{}_kqv'.format(stage)
     convprojection_name = 'decoder_stage{}_projection'.format(stage)
 
     def layer(input_tensor): 
         ei = lambda x : int(np.ceil(x/Nh)*Nh)
-        dk = ei(filters*Rk)
-        dv = ei(filters*Rv)
+        dk = ei(f_out*Rk)
+        dv = ei(f_out*Rv)
         
         # Form the MHA matrix
         kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal",name=convkqv_name)(input_tensor)
-        kqv = layers.AveragePooling2D()(kqv)
-        kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
-        kqv=layers.UpSampling2D()(kqv)
-
+        attn_out = MultiHeadAttention2D(dk,dv,Nh,relative)(kqv)
         # Projection of MHA
-
-        kqv = layers.Conv2D(filters,1,name=convprojection_name )(kqv)
-        return kqv
+        attn_out = layers.Conv2D(f_out,1,name=convprojection_name )(attn_out)
+        return attn_out
     
     return layer
-
-# def SelfAttention( filters,
-#                    stage = None,
-#                    Rk = 1,
-#                    Rv = 1):
-    
-#     convk_name = 'decoder_stage{}_k'.format(stage)
-#     convq_name = 'decoder_stage{}_q'.format(stage)
-#     convv_name = 'decoder_stage{}_v'.format(stage)
-#     convprojection_name = 'decoder_stage{}_projection'.format(stage)
-    
-#     def layer(input_tensor): 
-#         dk = ei(filters*Rk)
-#         dv = ei(filters*Rv)
-        
-#         # Form the KQV matrix
-#         k = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
-#         q = layers.Conv2D(filters = dk,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
-#         v = layers.Conv2D(filters = dv,kernel_size=1,padding='same',kernel_initializer='he_normal',name=convk_name)(input_tensor)
-
-#         kqv = layers.Conv2D(filters = 2*dk + dv,kernel_size = 1,padding = "same",kernel_initializer="he_normal",name=convkqv_name)(input_tensor)
-#         kqv = layers.AveragePooling2D()(kqv)
-#         kqv = SelfAttention2D(dk,dv,Nh,relative)(kqv)
-#         kqv=layers.UpSampling2D()(kqv)
-
-#         # Projection of MHA
-
-#         kqv = layers.Conv2D(filters,1,name=convprojection_name )(kqv)
-#         return kqv
-    
-#     return layer
 
 def Conv2dBn(
         filters,
