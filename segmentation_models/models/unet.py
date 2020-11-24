@@ -79,15 +79,11 @@ def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False):
         x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
 
         if skip is not None:
-            # Apply multiheaded self attention to skipped features
-            if stage == 3 or stage == 4:
-                skip = layers.AveragePooling2D()(skip)
-                
-            skip = SelfAttention_2(stage)(skip)
+            # Apply self attention to skipped features
             
-            if stage == 3 or stage == 4:
-                skip = layers.UpSampling2D()(skip)
-                
+            if str(stage) in '012':
+                skip = SelfAttention_2(stage)(skip)
+
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
