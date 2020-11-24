@@ -67,7 +67,7 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
 
     return wrapper
 
-def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False):
+def DecoderUpsamplingX2BlockMHA(filters, stage, use_batchnorm=False):
     up_name = 'decoder_stage{}_upsampling'.format(stage)
     conv1_name = 'decoder_stage{}a'.format(stage)
     conv2_name = 'decoder_stage{}b'.format(stage)
@@ -82,7 +82,7 @@ def DecoderUpsamplingX2BlockSA(filters, stage, use_batchnorm=False):
             # Apply self attention to skipped features
             
             if str(stage) in '012':
-                skip = MultiHeadAttention(stage)(skip)
+                skip = MultiHeadAttention(filters,stage)(skip)
 
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
@@ -144,7 +144,7 @@ def build_unet(
 ):
     input_ = backbone.input
     x = backbone.output
-    x = MultiHeadAttention(x)
+    x = MultiHeadAttention(512,name='output')(x)
     # extract skip connections
     skips = ([backbone.get_layer(name=i).output if isinstance(i, str)
               else backbone.get_layer(index=i).output for i in skip_connection_layers])
