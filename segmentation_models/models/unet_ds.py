@@ -255,7 +255,7 @@ def Unet_ds(
     elif decoder_block_type == 'transpose':
         decoder_block = DecoderTransposeX2Block
     elif decoder_block_type == 'upsampling_attention':
-        decoder_block = DecoderUpsamplingX2BlockSA
+        decoder_block = DecoderUpsamplingX2BlockMHA
     else:
         raise ValueError('Decoder block type should be in ("upsampling", "transpose","upsampling_attention"). '
                          'Got: {}'.format(decoder_block_type))
