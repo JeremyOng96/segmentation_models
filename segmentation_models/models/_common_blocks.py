@@ -105,7 +105,7 @@ class MultiHeadAttention2D(keras.layers.Layer):
         Output of tensor shape
         [Batch, Height, Width, Depth_v]
         """
-        super(SelfAttention2D, self).__init__(**kwargs)
+        super(MultiHeadAttention2D, self).__init__(**kwargs)
 
         # Performs checking for MHA assumptions
         if depth_k % num_heads != 0:
