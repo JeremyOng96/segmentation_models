@@ -27,6 +27,10 @@ class BackbonesFactory(ModelsFactory):
         # ResNets with CBAM
         'resnet18cbam': ('stage4_unit1_relu1', 'stage3_unit1_relu1', 'stage2_unit1_relu1', 'relu0'),
         'resnet34cbam': ('stage4_unit1_relu1', 'stage3_unit1_relu1', 'stage2_unit1_relu1', 'relu0'),
+        
+        # ResNets with Attention Augmented
+        'resnet18aa': ('stage4_unit1_relu1', 'stage3_unit1_relu1', 'stage2_unit1_relu1', 'relu0'),
+        'resnet34aa': ('stage4_unit1_relu1', 'stage3_unit1_relu1', 'stage2_unit1_relu1', 'relu0'),
 
         # ResNeXt
         'resnext50': ('stage4_unit1_relu1', 'stage3_unit1_relu1', 'stage2_unit1_relu1', 'relu0'),
