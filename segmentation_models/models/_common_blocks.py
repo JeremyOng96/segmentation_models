@@ -194,7 +194,7 @@ def Conv2dBn_P(
         if use_batchnorm:
             x = layers.BatchNormalization(axis=bn_axis, name=bn_name)(x)
 
-        x = layers.PReLU(name=act_name)(x)
+        x = layers.PReLU(shared_axes = [1,2], name=act_name)(x)
 
         return x
 
