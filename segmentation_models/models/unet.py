@@ -45,6 +45,21 @@ def Conv3x3BnReLU(filters, use_batchnorm, name=None):
 
     return wrapper
 
+def Conv3x3BnPReLU(filters, use_batchnorm, name=None):
+    kwargs = get_submodules()
+
+    def wrapper(input_tensor):
+        return Conv2dBn_P(
+            filters,
+            kernel_size=3,
+            kernel_initializer='he_normal',
+            padding='same',
+            use_batchnorm=use_batchnorm,
+            name=name,
+            **kwargs
+        )(input_tensor)
+
+    return wrapper
 
 def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
     up_name = 'decoder_stage{}_upsampling'.format(stage)
@@ -67,6 +82,47 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
 
     return wrapper
 
+def DecoderUpsamplingX2BlockPReLU(filters, stage, use_batchnorm=False):
+    up_name = 'decoder_stage{}_upsampling'.format(stage)
+    conv1_name = 'decoder_stage{}a'.format(stage)
+    conv2_name = 'decoder_stage{}b'.format(stage)
+    concat_name = 'decoder_stage{}_concat'.format(stage)
+
+    concat_axis = 3 if backend.image_data_format() == 'channels_last' else 1
+
+    def wrapper(input_tensor, skip=None):
+        x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
+
+        if skip is not None:
+            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
+
+        x = Conv3x3BnPReLU(filters, use_batchnorm, name=conv1_name)(x)
+        x = Conv3x3BnPReLU(filters, use_batchnorm, name=conv2_name)(x)
+
+        return x
+
+    return wrapper
+
+def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
+    up_name = 'decoder_stage{}_upsampling'.format(stage)
+    conv1_name = 'decoder_stage{}a'.format(stage)
+    conv2_name = 'decoder_stage{}b'.format(stage)
+    concat_name = 'decoder_stage{}_concat'.format(stage)
+
+    concat_axis = 3 if backend.image_data_format() == 'channels_last' else 1
+
+    def wrapper(input_tensor, skip=None):
+        x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
+
+        if skip is not None:
+            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
+
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
+
+        return x
+
+    return wrapper
 def DecoderTransposeX2Block(filters, stage, use_batchnorm=False):
     transp_name = 'decoder_stage{}a_transpose'.format(stage)
     bn_name = 'decoder_stage{}a_bn'.format(stage)
