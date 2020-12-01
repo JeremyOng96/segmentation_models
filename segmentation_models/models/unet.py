@@ -270,6 +270,8 @@ def Unet(
         decoder_block = DecoderUpsamplingX2Block
     elif decoder_block_type == 'transpose':
         decoder_block = DecoderTransposeX2Block
+    elif decoder_block_type =='upsampling_prelu':
+        decoder_block = DecoderUpsamplingX2BlockPReLU
     else:
         raise ValueError('Decoder block type should be in ("upsampling", "transpose","upsampling_attention"). '
                          'Got: {}'.format(decoder_block_type))
