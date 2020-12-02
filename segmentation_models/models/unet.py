@@ -83,6 +83,28 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
 
     return wrapper
 
+def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
+    up_name = 'decoder_stage{}_upsampling'.format(stage)
+    conv1_name = 'decoder_stage{}a'.format(stage)
+    conv2_name = 'decoder_stage{}b'.format(stage)
+    concat_name = 'decoder_stage{}_concat'.format(stage)
+
+    concat_axis = 3 if backend.image_data_format() == 'channels_last' else 1
+
+    def wrapper(input_tensor, skip=None):
+        x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
+
+        if skip is not None:
+            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
+
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
+        x = cbam_block()(x)
+        
+        return x
+
+    return wrapper
+
 def DecoderUpsamplingX2BlockPReLU(filters, stage, use_batchnorm=False):
     up_name = 'decoder_stage{}_upsampling'.format(stage)
     conv1_name = 'decoder_stage{}a'.format(stage)
@@ -273,6 +295,8 @@ def Unet(
         decoder_block = DecoderTransposeX2Block
     elif decoder_block_type =='upsampling_prelu':
         decoder_block = DecoderUpsamplingX2BlockPReLU
+    elif decoder_block_type == 'upsampling_cbam':
+         decoder_block = DecoderUpsamplingX2BlockCBAM
     else:
         raise ValueError('Decoder block type should be in ("upsampling", "transpose","upsampling_attention"). '
                          'Got: {}'.format(decoder_block_type))
