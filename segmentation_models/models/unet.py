@@ -100,6 +100,8 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
         x = cbam_block()(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Activation('relu')(x)
         
         return x
 
