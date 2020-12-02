@@ -1,6 +1,6 @@
 from keras_applications import get_submodules_from_kwargs
 
-from ._common_blocks import Conv2dBn, Conv2dBn_P
+from ._common_blocks import Conv2dBn, Conv2dBn_P,cbam_block
 from ._utils import freeze_model, filter_keras_submodules
 from ..backbones.backbones_factory import Backbones
 import numpy as np
@@ -77,7 +77,8 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
-
+        x = cbam_block()(x)
+        
         return x
 
     return wrapper
