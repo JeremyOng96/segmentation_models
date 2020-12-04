@@ -83,12 +83,14 @@ def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
     return wrapper
 
 def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
-    up_name = 'decoder_stage{}_upsampling'.format(stage)
+    transp_name = 'decoder_stage{}a_transpose'.format(stage)
+    bn_name = 'decoder_stage{}a_bn'.format(stage)
+    relu_name = 'decoder_stage{}a_relu'.format(stage)
     conv1_name = 'decoder_stage{}a'.format(stage)
     conv2_name = 'decoder_stage{}b'.format(stage)
     concat_name = 'decoder_stage{}_concat'.format(stage)
 
-    concat_axis = 3 if backend.image_data_format() == 'channels_last' else 1
+    concat_axis = bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
 
     def layer(input_tensor, skip=None):
 
