@@ -91,17 +91,15 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
     concat_axis = 3 if backend.image_data_format() == 'channels_last' else 1
 
     def wrapper(input_tensor, skip=None):
-        x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
+        x = layers.Conv2DTranspose(filters,kernel_size=2,strides=2,padding='same')(input_tensor)
 
         if skip is not None:
+            x = layers.Conv2D(filters,1)(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
+            x = cbam_block()(x)
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
-        if skip is not None:
-            x = cbam_block()(x)
-            x = layers.BatchNormalization()(x)
-            x = layers.Activation('relu')(x)
         
         return x
 
