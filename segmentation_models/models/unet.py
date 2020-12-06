@@ -100,7 +100,7 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
             d_feature = layers.BatchNormalization(axis=bn_axis, name=bn_name)(d_feature)
 
         d_feature = layers.Activation('relu', name=relu_name)(d_feature)
-        attn_d_feature = cbam_block()(decoder_feature)
+        attn_d_feature = cbam_block()(d_feature)
 
         if skip is not None:
             attn_e_feature = cbam_block()(skip)
