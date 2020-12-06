@@ -86,33 +86,28 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
     transp_name = 'decoder_stage{}a_transpose'.format(stage)
     bn_name = 'decoder_stage{}a_bn'.format(stage)
     relu_name = 'decoder_stage{}a_relu'.format(stage)
-    conv_block_name = 'decoder_stage{}b'.format(stage)
+    conv1_name = 'decoder_stage{}a'.format(stage)
+    conv2_name = 'decoder_stage{}b'.format(stage)
     concat_name = 'decoder_stage{}_concat'.format(stage)
 
     concat_axis = bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
 
     def layer(input_tensor, skip=None):
 
-        x = layers.Conv2DTranspose(
-            filters,
-            kernel_size=(2, 2),
-            strides=(2, 2),
-            padding='same',
-            name=transp_name,
-            use_bias=not use_batchnorm,
-        )(input_tensor)
+        d_feature = layers.Conv2DTranspose(filters,kernel_size=(2, 2),strides=(2, 2),padding='same',name=transp_name,use_bias=not use_batchnorm)(input_tensor)
 
         if use_batchnorm:
-            x = layers.BatchNormalization(axis=bn_axis, name=bn_name)(x)
+            d_feature = layers.BatchNormalization(axis=bn_axis, name=bn_name)(d_feature)
 
-        x = layers.Activation('relu', name=relu_name)(x)
-        
+        d_feature = layers.Activation('relu', name=relu_name)(d_feature)
+        attn_d_feature = cbam_block()(decoder_feature)
+
         if skip is not None:
-            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
-            x = cbam_block()(x)
+            attn_e_feature = cbam_block()(skip)
+            x = layers.Concatenate(axis=concat_axis, name=concat_name)([attn_e_feature, attn_d_feature])
 
-        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv_block_name)(x)
-
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
         return x
 
     return layer
