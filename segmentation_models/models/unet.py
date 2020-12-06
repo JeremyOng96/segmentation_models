@@ -94,17 +94,17 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
 
     def layer(input_tensor, skip=None):
 
-        d_feature = layers.Conv2DTranspose(filters,kernel_size=(2, 2),strides=(2, 2),padding='same',name=transp_name,use_bias=not use_batchnorm)(input_tensor)
+        x = layers.Conv2DTranspose(filters,kernel_size=(2, 2),strides=(2, 2),padding='same',name=transp_name,use_bias=not use_batchnorm)(input_tensor)
 
         if use_batchnorm:
-            d_feature = layers.BatchNormalization(axis=bn_axis, name=bn_name)(d_feature)
+            x = layers.BatchNormalization(axis=bn_axis, name=bn_name)(x)
 
-        d_feature = layers.Activation('relu', name=relu_name)(d_feature)
-        attn_d_feature = cbam_block()(d_feature)
+        x = layers.Activation('relu', name=relu_name)(x)
+        x = cbam_block()(x)
 
         if skip is not None:
-            attn_e_feature = cbam_block()(skip)
-            x = layers.Concatenate(axis=concat_axis, name=concat_name)([attn_e_feature, attn_d_feature])
+            skip = cbam_block()(skip)
+            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
 
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
         x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
