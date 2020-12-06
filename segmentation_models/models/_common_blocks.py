@@ -72,7 +72,7 @@ def spatial_attention(input_tensor):
 					strides=1,
 					padding='same',
 					activation='sigmoid',
-					kernel_initializer='glorot_normal',
+					kernel_initializer='he_normal',
 					use_bias=False)(concat)	
 	assert cbam_feature.shape[-1] == 1
 	
