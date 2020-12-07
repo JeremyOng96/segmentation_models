@@ -226,7 +226,7 @@ def build_unet(
     # model head (define number of output classes)
     x = layers.Conv2D(
         filters=classes,
-        kernel_size=(3, 3),
+        kernel_size=(1, 1),
         padding='same',
         use_bias=True,
         kernel_initializer='glorot_uniform',
