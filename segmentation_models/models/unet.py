@@ -91,11 +91,13 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
     concat_axis = 3 if backend.image_data_format() == 'channels_last' else 1
 
     def wrapper(input_tensor, skip=None):
-        x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
+        x = layers.UpSampling2D(size=2, name=up_name, interpolation='bilinear')(input_tensor)
+        x = layers.Conv2D(filters,2,kernel_initializer='he_normal')(x)
         # Adds attention to the upsampling layer
         x = cbam_block()(x)
         if skip is not None:
             # This layer is used to reduce the semantic difference between encoder and decoder features before concatenation
+            # Batch Normalization and ReLU layers are added for non linearity so that the layers from Residual blocks can be of the same semantic with the upsampled layer
             skip = layers.Conv2D(filters,1,kernel_initializer='he_normal')(skip)
             skip = layers.BatchNormalization()(skip)
             skip = layers.Activation('relu')(skip)
