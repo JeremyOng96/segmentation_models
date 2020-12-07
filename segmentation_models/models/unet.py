@@ -92,8 +92,14 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
 
     def wrapper(input_tensor, skip=None):
         x = layers.UpSampling2D(size=2, name=up_name)(input_tensor)
+        # Adds attention to the upsampling layer
         x = cbam_block()(x)
         if skip is not None:
+            # This layer is used to reduce the semantic difference between encoder and decoder features before concatenation
+            skip = layers.Conv2D(filters,1,kernel_initializer='he_normal')(skip)
+            skip = layers.BatchNormalization()(skip)
+            skip = layers.Activation('relu')(skip)
+            # Adds attention to the encoder features
             skip = cbam_block()(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
             
