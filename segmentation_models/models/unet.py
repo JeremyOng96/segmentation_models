@@ -99,10 +99,7 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
         x = cbam_block()(x)
         if skip is not None:
             # This layer is used to reduce the semantic difference between encoder and decoder features before concatenation
-            # Batch Normalization and ReLU layers are added for non linearity so that the layers from Residual blocks can be of the same semantic with the upsampled layer
             skip = layers.Conv2D(filters,1,kernel_initializer='he_normal',name=skip_name+'_conv')(skip)
-            skip = layers.BatchNormalization(name=skip_name+'_bn')(skip)
-            skip = layers.Activation('relu',name=skip_name+'_activation')(skip)
             # Adds attention to the encoder features
             skip = cbam_block()(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
