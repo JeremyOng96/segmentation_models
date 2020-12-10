@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
-import keras.backend as K
+import tensorflow.keras.backend as K
 
 
 def cbam_block(ratio=16, **kwargs):
