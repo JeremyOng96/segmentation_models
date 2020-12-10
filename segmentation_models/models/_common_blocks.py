@@ -2,7 +2,7 @@ from keras_applications import get_submodules_from_kwargs
 import tensorflow as tf
 import numpy as np
 from tensorflow import keras
-from keras import layers
+from tensorflow.keras import layers
 import keras.backend as K
 
 
