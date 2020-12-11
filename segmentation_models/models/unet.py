@@ -1,6 +1,6 @@
 from keras_applications import get_submodules_from_kwargs
 
-from ._common_blocks import Conv2dBn, Conv2dBn_P,cbam_block
+from ._common_blocks import Conv2dBn, Conv2dBn_P,cbam_block, aspp
 from ._utils import freeze_model, filter_keras_submodules
 from ..backbones.backbones_factory import Backbones
 import numpy as np
@@ -100,11 +100,14 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
         if skip is not None:
             # This layer is used to reduce the semantic difference between encoder and decoder features before concatenation
             # Adds attention to the encoder features
+            if stage == 3:
+                skip = aspp(filters,[6,12,18])(skip)
+                
             skip = cbam_block()(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
             
-        x = Conv3x3BnPReLU(filters, use_batchnorm, name=conv1_name)(x)
-        x = Conv3x3BnPReLU(filters, use_batchnorm, name=conv2_name)(x)
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
+        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
         
         return x
 
