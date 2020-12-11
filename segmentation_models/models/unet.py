@@ -103,8 +103,8 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
             skip = cbam_block()(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
             
-        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
-        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
+        x = Conv3x3BnPReLU(filters, use_batchnorm, name=conv1_name)(x)
+        x = Conv3x3BnPReLU(filters, use_batchnorm, name=conv2_name)(x)
         
         return x
 
