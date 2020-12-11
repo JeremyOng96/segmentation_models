@@ -6,6 +6,28 @@ from tensorflow.keras import layers
 import tensorflow.keras.backend as K
 
 
+def aspp(filters, dilation_rates):
+	"""
+	Apply Atrous Spatial Pyramid Pooling to the input features
+	Arguments: filters - Number of filters for each separable convolution 2D
+		   dilations_rates - Number of dilation rates
+	"""
+	
+	outputs = []
+	def layer(input_tensor):
+		for rate in dilation_rates:
+			out_temp = layers.SeparableConv2D(filters,3,dilation_rate=rate,depthwise_initializer="he_normal",pointwise_initializer="he_normal")(input_tensor)
+			outputs.append(out_temp)
+			
+		outputs = layers.Conv2D(filters,1,kernel_initializer='he_normal')(outputs)
+		outputs = layers.BatchNormalization()(outputs)
+		outputs = layers.Activation('relu')(outputs)
+		
+		return outputs
+	
+	return layer
+							  
+
 def cbam_block(ratio=16, **kwargs):
 	"""Contains the implementation of Convolutional Block Attention Module(CBAM) block.
 	As described in https://arxiv.org/abs/1807.06521.
