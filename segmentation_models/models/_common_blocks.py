@@ -6,6 +6,28 @@ from tensorflow.keras import layers
 import tensorflow.keras.backend as K
 
 
+def Sep_ConvBN(filters,kernel_size=3,dilation_rate=1,depth_activation=False,kernel_initializer='he_normal'):
+	"""
+	Custom separable convolution by applying depthwise convolution (DC) followed by pointwise convolution (PC)
+	Each convolution is followed by a BN and ReLU layer.
+	DC -> BN -> ReLU -> PC -> BN -> ReLU
+	"""
+	
+	def layer(input_tensor):
+		# Depthwise convolution first
+		x = layers.DepthwiseConv2D(kernel_size,padding='same',dilation_rate=dilation_rate,depthwise_initializer=kernel_initializer)(input_tensor)
+		x = layers.BatchNormalization()(x)
+		x = layers.Activation('relu')(x)
+		
+		# Followed by pointwise convolution
+		x = layers.Conv2D(filters,kernel_size=1,kernel_initializer=kernel_initializer)(x)
+		x = layers.BatchNormalization()(x)
+		x = layers.Activation('relu')(x)
+		
+		return x
+	
+	return layer
+
 def aspp(filters, dilation_rates):
 	"""
 	Apply Atrous Spatial Pyramid Pooling to the input features
@@ -13,17 +35,21 @@ def aspp(filters, dilation_rates):
 		   dilations_rates - Number of dilation rates
 	"""
 	
-	outputs = []
+
 	def layer(input_tensor):
+		out = layers.Conv2D(filters,1,kernel_initializer='he_normal')(input_tensor)
+		out = layers.BatchNormalization()(out_temp)
+		out = layers.Activation('relu')(out_temp)
+
 		for rate in dilation_rates:
-			out_temp = layers.SeparableConv2D(filters,3,dilation_rate=rate,depthwise_initializer="he_normal",pointwise_initializer="he_normal")(input_tensor)
-			outputs.append(out_temp)
+			out_temp = Sep_ConvBN(filters,3,dilation_rate=rate,kernel_initializer="he_normal")(input_tensor)
+			out = layers.Concatenate()([out,out_temp])
 			
-		outputs = layers.Conv2D(filters,1,kernel_initializer='he_normal')(outputs)
-		outputs = layers.BatchNormalization()(outputs)
-		outputs = layers.Activation('relu')(outputs)
+		out = layers.Conv2D(filters,1,kernel_initializer='he_normal')(out)
+		out = layers.BatchNormalization()(out)
+		out = layers.Activation('relu')(out)
 		
-		return outputs
+		return out
 	
 	return layer
 							  
