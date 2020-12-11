@@ -38,8 +38,8 @@ def aspp(filters, dilation_rates):
 
 	def layer(input_tensor):
 		out = layers.Conv2D(filters,1,kernel_initializer='he_normal')(input_tensor)
-		out = layers.BatchNormalization()(out_temp)
-		out = layers.Activation('relu')(out_temp)
+		out = layers.BatchNormalization()(out)
+		out = layers.Activation('relu')(out)
 
 		for rate in dilation_rates:
 			out_temp = Sep_ConvBN(filters,3,dilation_rate=rate,kernel_initializer="he_normal")(input_tensor)
