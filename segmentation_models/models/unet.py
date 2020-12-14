@@ -101,8 +101,8 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
         if skip is not None:
             # This layer is used to reduce the semantic difference between encoder and decoder features before concatenation
             # Adds attention to the encoder features
-            skip = GCN(filters,15)(skip)
-            skip = BR(filters)(skip)
+            skip = GCN(128,15)(skip)
+            skip = BR(128)(skip)
             skip = cbam_block()(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
             
