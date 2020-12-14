@@ -52,8 +52,11 @@ def channel_attention(input_tensor, ratio=16):
 	channel_axis = 1 if K.image_data_format() == "channels_first" else -1
 	channel = input_tensor.shape[channel_axis]
 	
-	shared_layer_one = layers.Dense(channel//ratio,activation='relu',kernel_initializer='he_normal',use_bias=True,bias_initializer='zeros')    
-	shared_layer_two = layers.Dense(channel,kernel_initializer='he_normal',use_bias=True,bias_initializer='zeros')	
+	shared_layer_one = layers.Conv2D(channel//ratio,1,kernel_initializer='he_normal')
+	shared_layer_two = layers.Conv2D(channel//ratio,1,kernel_initializer='he_normal')
+	
+	# shared_layer_one = layers.Dense(channel//ratio,activation='relu',kernel_initializer='he_normal',use_bias=True,bias_initializer='zeros')    
+	# shared_layer_two = layers.Dense(channel,kernel_initializer='he_normal',use_bias=True,bias_initializer='zeros')	
     
     # Use average pooling layers
 	avg_pool = layers.GlobalAveragePooling2D()(input_tensor)    
