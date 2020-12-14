@@ -6,53 +6,39 @@ from tensorflow.keras import layers
 import tensorflow.keras.backend as K
 
 
-def Sep_ConvBN(filters,kernel_size=3,dilation_rate=1,depth_activation=False,kernel_initializer='he_normal'):
-	"""
-	Custom separable convolution by applying depthwise convolution (DC) followed by pointwise convolution (PC)
-	Each convolution is followed by a BN and ReLU layer.
-	DC -> BN -> ReLU -> PC -> BN -> ReLU
-	"""
+def GCN(out_c=21,k=7):
+	pad_h = (int((k-1)/2),0)
+    	pad_w = (0,int((k-1)/2))
 	
 	def layer(input_tensor):
-		# Depthwise convolution first
-		x = layers.DepthwiseConv2D(kernel_size,padding='same',dilation_rate=dilation_rate,depthwise_initializer=kernel_initializer)(input_tensor)
-		x = layers.BatchNormalization()(x)
-		x = layers.Activation('relu')(x)
-		
-		# Followed by pointwise convolution
-		x = layers.Conv2D(filters,kernel_size=1,kernel_initializer=kernel_initializer)(x)
-		x = layers.BatchNormalization()(x)
-		x = layers.Activation('relu')(x)
+		x_l = layers.ZeroPadding2D(padding=pad_h)(input_tensor)
+		x_l = layers.Conv2D(out_c,(k,1))(x_l)
+		x_l = layers.ZeroPadding2D(padding=pad_w)(x_l)
+		x_l = layers.Conv2D(out_c,(1,k))(x_l)
+
+		x_r = layers.ZeroPadding2D(padding=pad_w)(input_tensor)
+		x_r = layers.Conv2D(out_c,(1,k))(x_r)
+		x_r = layers.ZeroPadding2D(padding=pad_h)(x_r)
+		x_r = layers.Conv2D(out_c,(k,1))(x_r)
+
+		x = layers.Add()([x_l,x_r])
 		
 		return x
 	
 	return layer
 
-def aspp(filters, dilation_rates):
-	"""
-	Apply Atrous Spatial Pyramid Pooling to the input features
-	Arguments: filters - Number of filters for each separable convolution 2D
-		   dilations_rates - Number of dilation rates
-	"""
-	
-
+def BR(out_c=21):
 	def layer(input_tensor):
-		out = layers.Conv2D(filters,1,kernel_initializer='he_normal')(input_tensor)
-		out = layers.BatchNormalization()(out)
-		out = layers.Activation('relu')(out)
-
-		for rate in dilation_rates:
-			out_temp = Sep_ConvBN(filters,3,dilation_rate=rate,kernel_initializer="he_normal")(input_tensor)
-			out = layers.Concatenate()([out,out_temp])
-			
-		out = layers.Conv2D(filters,1,kernel_initializer='he_normal')(out)
-		out = layers.BatchNormalization()(out)
-		out = layers.Activation('relu')(out)
 		
-		return out
+		residual = layers.Conv2D(out_c,3,padding='same')(input_tensor)
+		residual = layers.Activation('relu')(residual)
+		residual = layers.Conv2D(out_c,3,padding='same')(residual)
+
+		x = layers.Add()([residual,input_tensor])
+
+		return x
 	
 	return layer
-							  
 
 def cbam_block(ratio=16, **kwargs):
 	"""Contains the implementation of Convolutional Block Attention Module(CBAM) block.
