@@ -97,12 +97,14 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
         # x = layers.Conv2D(filters,2,kernel_initializer='he_normal',padding='same',name=up_name+'_conv')(x)
         # Adds attention to the upsampling layer
         x = cbam_block()(x)
+        p = [4,5,6,7]
+        k = 2**p[stage]-1
         if skip is not None:
             # This layer is used to reduce the semantic difference between encoder and decoder features before concatenation
             # Adds attention to the encoder features
             
-            skip = GCN(out_c=128)(skip)
-            skip = BR(out_c=128)(skip)
+            skip = GCN(out_c=filters,k)(skip)
+            skip = BR(out_c=filters)(skip)
             skip = cbam_block()(skip)
             x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
             
@@ -205,6 +207,7 @@ def build_unet(
 ):
     input_ = backbone.input
     x = backbone.output
+    x = GCN(
     # extract skip connections
     skips = ([backbone.get_layer(name=i).output if isinstance(i, str)
               else backbone.get_layer(index=i).output for i in skip_connection_layers])
