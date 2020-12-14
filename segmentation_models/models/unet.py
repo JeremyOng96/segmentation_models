@@ -98,13 +98,13 @@ def DecoderUpsamplingX2BlockCBAM(filters, stage, use_batchnorm=False):
         # Adds attention to the upsampling layer
         x = cbam_block()(x)
         p = [4,5,6,7]
-        if str(stage) in '0123':
-            k = 2**p[stage]-1
             
         if skip is not None:
             # This layer is used to reduce the semantic difference between encoder and decoder features before concatenation
             # Adds attention to the encoder features
-            
+            if str(stage) in '0123':
+                k = 2**p[stage]-1
+                
             skip = GCN(filters,k)(skip)
             skip = BR(filters)(skip)
             skip = cbam_block()(skip)
