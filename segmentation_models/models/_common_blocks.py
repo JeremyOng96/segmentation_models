@@ -11,15 +11,11 @@ def GCN(out_c=21,k=7):
     	pad_w = (0,int((k-1)/2))
 	
 	def layer(input_tensor):
-		x_l = layers.ZeroPadding2D(padding=pad_h)(input_tensor)
-		x_l = layers.Conv2D(out_c,(k,1))(x_l)
-		x_l = layers.ZeroPadding2D(padding=pad_w)(x_l)
-		x_l = layers.Conv2D(out_c,(1,k))(x_l)
-
-		x_r = layers.ZeroPadding2D(padding=pad_w)(input_tensor)
-		x_r = layers.Conv2D(out_c,(1,k))(x_r)
-		x_r = layers.ZeroPadding2D(padding=pad_h)(x_r)
-		x_r = layers.Conv2D(out_c,(k,1))(x_r)
+		x_l = layers.Conv2D(out_c,(k,1),padding='same',kernel_initializer='he_normal')(input_tensor)
+		x_l = layers.Conv2D(out_c,(1,k),padding='same',kernel_initializer='he_normal')(x_l)
+		
+		x_r = layers.Conv2D(out_c,(1,k),padding='same',kernel_initializer='he_normal')(input_tensor)
+		x_r = layers.Conv2D(out_c,(k,1),padding='same',kernel_initializer='he_normal')(x_r)
 
 		x = layers.Add()([x_l,x_r])
 		
