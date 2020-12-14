@@ -207,7 +207,8 @@ def build_unet(
 ):
     input_ = backbone.input
     x = backbone.output
-    x = GCN(
+    x = GCN(out_c=512)(x)
+    x = BR(out_c=512)(x)
     # extract skip connections
     skips = ([backbone.get_layer(name=i).output if isinstance(i, str)
               else backbone.get_layer(index=i).output for i in skip_connection_layers])
