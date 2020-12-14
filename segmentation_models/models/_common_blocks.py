@@ -8,19 +8,19 @@ import tensorflow.keras.backend as K
 
 def GCN(out_c=21,k=7):
 	pad_h = (int((k-1)/2),0)
-    	pad_w = (0,int((k-1)/2))
-	
+	pad_w = (0,int((k-1)/2))
+
 	def layer(input_tensor):
 		x_l = layers.Conv2D(out_c,(k,1),padding='same',kernel_initializer='he_normal')(input_tensor)
 		x_l = layers.Conv2D(out_c,(1,k),padding='same',kernel_initializer='he_normal')(x_l)
-		
+
 		x_r = layers.Conv2D(out_c,(1,k),padding='same',kernel_initializer='he_normal')(input_tensor)
 		x_r = layers.Conv2D(out_c,(k,1),padding='same',kernel_initializer='he_normal')(x_r)
 
 		x = layers.Add()([x_l,x_r])
-		
+
 		return x
-	
+
 	return layer
 
 def BR(out_c=21):
